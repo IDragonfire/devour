@@ -2,19 +2,19 @@ const _ = require('lodash')
 const pluralize = require('pluralize')
 
 const cache = new class {
-  constructor() { this._cache = []; }
+  constructor () { this._cache = [] }
 
-  set(type, id, deserializedData) {
+  set (type, id, deserializedData) {
     this._cache.push({
       type: type,
       id: id,
       deserialized: deserializedData
-    });
+    })
   }
 
-  get(type, id) {
-    const match = _.find(this._cache, r => r.type === type && r.id === id);
-    return match && match.deserialized;
+  get (type, id) {
+    const match = _.find(this._cache, r => r.type === type && r.id === id)
+    return match && match.deserialized
   }
 }
 
@@ -27,41 +27,41 @@ function collection (items, included, responseModel, useCache = false) {
 function resource (item, included, responseModel, useCache = false) {
   if (useCache) {
     const cachedItem = cache.get(item.type, item.id)
-    if (cachedItem) return cachedItem;
+    if (cachedItem) return cachedItem
   }
 
   let model = this.modelFor(pluralize.singular(item.type))
-  if (!model) throw new Error('The JSON API response had a type of "' + item.type + '" but Devour expected the type to be "' + responseModel + '".');
+  if (!model) throw new Error('The JSON API response had a type of "' + item.type + '" but Devour expected the type to be "' + responseModel + '".')
 
-  if (model.options.deserializer) return model.options.deserializer.call(this, item);
+  if (model.options.deserializer) return model.options.deserializer.call(this, item)
 
-  let deserializedModel = {id: item.id};
+  let deserializedModel = {id: item.id}
 
   _.forOwn(item.attributes, (value, attr) => {
-    const attrConfig = model.attributes[attr];
+    const attrConfig = model.attributes[attr]
 
-    if (_.isUndefined(attrConfig) && attr !== "id")  {
-      console.warn(`Resource response contains attribute "${attr}", but it is not present on model config and therefore not deserialized.`);
+    if (_.isUndefined(attrConfig) && attr !== 'id') {
+      console.warn(`Resource response contains attribute "${attr}", but it is not present on model config and therefore not deserialized.`)
     } else {
-      deserializedModel[attr] = value;
+      deserializedModel[attr] = value
     }
-  });
+  })
 
   // Important: cache before parsing relationships to avoid infinite loop
-  cache.set(item.type, item.id, deserializedModel);
+  cache.set(item.type, item.id, deserializedModel)
 
   _.forOwn(item.relationships, (value, rel) => {
-    const relConfig = model.attributes[rel];
+    const relConfig = model.attributes[rel]
 
-    if (_.isUndefined(relConfig))
+    if (_.isUndefined(relConfig)) {
       console.warn(`Resource response contains relationship "${rel}", but it is not present on model config and therefore not deserialized.`)
-    else if (!isRelationship(relConfig))
+    } else if (!isRelationship(relConfig)) {
       console.warn(`Resource response contains relationship "${rel}", but it is present on model config as a plain attribute.`)
-    else
+    } else {
       deserializedModel[rel] =
-        attachRelationsFor.call(this, model, relConfig, item, included, rel);
-  });
-
+        attachRelationsFor.call(this, model, relConfig, item, included, rel)
+    }
+  })
 
   var params = ['meta', 'links']
   params.forEach(function (param) {
@@ -70,7 +70,7 @@ function resource (item, included, responseModel, useCache = false) {
     }
   })
 
-  cache.set(item.type, item.id, deserializedModel);
+  cache.set(item.type, item.id, deserializedModel)
 
   return deserializedModel
 }
